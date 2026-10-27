@@ -105,18 +105,13 @@
         if (sessionError) throw sessionError;
 
         if (!sessionData.session) {
-          throw new Error("Please sign in through the administrator login first.");
-        }
-
-        const { data: isAdmin, error: adminError } =
-          await client.rpc("is_club_admin");
-
+          throw new Error("Please sign in through the administrator login const { data: isAdmin, error: adminError } =
+       await client.rpc("is_club_admin");
         if (adminError) throw adminError;
-
-        if (isAdmin !== true) {
+       if (isAdmin !== true) {
           await client.auth.signOut();
-          throw new Error("Administrator access is required.");
-        }
+         throw new Error("Administrator access is required.");
+}
 
         document.getElementById("loadingPanel").classList.add("hidden");
         directoryPanel.classList.remove("hidden");
