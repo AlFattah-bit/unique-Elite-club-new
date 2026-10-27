@@ -1,0 +1,188 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#123c2b">
+  <title>Unique Elite Club | Member Directory</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f5f3e9;
+      color: #173d2c;
+    }
+    header {
+      background: #123c2b;
+      color: #f1d58a;
+      text-align: center;
+      padding: 24px 15px;
+    }
+    main {
+      max-width: 850px;
+      margin: 25px auto;
+      padding: 15px;
+    }
+    .panel {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 18px;
+      box-shadow: 0 4px 18px #0000000d;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      border: 0;
+      border-radius: 7px;
+      background: #176342;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+    }
+    .member {
+      border: 1px solid #dce5dd;
+      border-radius: 9px;
+      padding: 14px;
+      margin: 12px 0;
+      overflow-wrap: anywhere;
+    }
+    .hidden { display: none; }
+    .status { white-space: pre-wrap; overflow-wrap: anywhere; }
+    a { color: #176342; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Unique Elite Club</h1>
+    <p>Member Directory</p>
+    <p>Unique! Togetherness We Rise!</p>
+  </header>
+
+  <main>
+    <section class="panel" id="loadingPanel">
+      <p class="status" id="message">Checking administrator access...</p>
+    </section>
+
+    <section class="panel hidden" id="directoryPanel">
+      <h2>Approved Members</h2>
+      <button id="refreshButton" type="button">Refresh Directory</button>
+      <button id="logoutButton" type="button">Sign Out</button>
+      <p class="status" id="directoryMessage" role="status"></p>
+      <div id="memberList"></div>
+      <p><a href="index.html">Return to homepage</a></p>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script>
+    const message = document.getElementById("message");
+    const directoryPanel = document.getElementById("directoryPanel");
+    const directoryMessage = document.getElementById("directoryMessage");
+    const memberList = document.getElementById("memberList");
+    let client;
+
+    async function startDirectory() {
+      try {
+        if (!window.supabase ||
+            typeof SUPABASE_URL === "undefined" ||
+            typeof SUPABASE_PUBLISHABLE_KEY === "undefined") {
+          throw new Error("Supabase configuration could not be found.");
+        }
+
+        client = window.supabase.createClient(
+          SUPABASE_URL,
+          SUPABASE_PUBLISHABLE_KEY
+        );
+
+        const { data: sessionData, error: sessionError } =
+          await client.auth.getSession();
+
+        if (sessionError) throw sessionError;
+
+        if (!sessionData.session) {
+          throw new Error("Please sign in through the administrator login first.");
+        }
+
+        const { data: isAdmin, error: adminError } =
+          await client.rpc("is_club_admin");
+
+        if (adminError) throw adminError;
+
+        if (isAdmin !== true) {
+          await client.auth.signOut();
+          throw new Error("Administrator access is required.");
+        }
+
+        document.getElementById("loadingPanel").classList.add("hidden");
+        directoryPanel.classList.remove("hidden");
+        await loadMembers();
+      } catch (error) {
+        message.textContent = error.message;
+      }
+    }
+
+    async function loadMembers() {
+      memberList.replaceChildren();
+      directoryMessage.textContent = "Loading approved members...";
+
+      const { data, error } = await client.rpc("get_approved_members");
+
+      if (error) {
+        directoryMessage.textContent =
+          "Could not load members: " + error.message;
+        return;
+      }
+
+      directoryMessage.textContent =
+        data.length + " approved member(s).";
+
+      if (!data.length) {
+        memberList.textContent = "No approved members found.";
+        return;
+      }
+
+      data.forEach(function(member) {
+        const card = document.createElement("article");
+        card.className = "member";
+
+        const name = document.createElement("h3");
+        name.textContent = member.full_name || "Member";
+        card.appendChild(name);
+
+        const number = document.createElement("p");
+        number.textContent =
+          "Membership number: " +
+          (member.membership_number || "Not assigned yet");
+        card.appendChild(number);
+
+        const date = document.createElement("p");
+        date.textContent = "Application date: " +
+          (member.created_at
+            ? new Date(member.created_at).toLocaleDateString()
+            : "Not available");
+        card.appendChild(date);
+
+        memberList.appendChild(card);
+      });
+    }
+
+    document.getElementById("refreshButton").addEventListener(
+      "click", loadMembers
+    );
+
+    document.getElementById("logoutButton").addEventListener(
+      "click", async function() {
+        if (client) await client.auth.signOut();
+        window.location.href = "login.html";
+      }
+    );
+
+    startDirectory();
+  </script>
+</body>
+</html>
