@@ -1,2 +1,196 @@
 
 
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#123c2b">
+  <title>Member Login | Unique Elite Club</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px 16px;
+      font-family: Arial, sans-serif;
+      background: #f5f3eb;
+      color: #183c2b;
+    }
+    .card {
+      max-width: 440px;
+      margin: 25px auto;
+      padding: 25px;
+      background: white;
+      border-radius: 18px;
+      box-shadow: 0 8px 28px #00000012;
+    }
+    h1 { text-align: center; color: #174b34; }
+    .gold { color: #b68a28; text-align: center; }
+    label { display: block; margin-top: 16px; font-weight: bold; }
+    input {
+      width: 100%;
+      padding: 13px;
+      margin-top: 7px;
+      border: 1px solid #c8d2ca;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    button {
+      width: 100%;
+      padding: 14px;
+      margin-top: 16px;
+      border: 0;
+      border-radius: 8px;
+      background: #174b34;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+    }
+    button.secondary { background: #b68a28; color: #172d20; }
+    #message { margin-top: 18px; line-height: 1.5; overflow-wrap: anywhere; }
+    a { color: #174b34; }
+    .back { text-align: center; margin-top: 22px; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>Unique Elite Club</h1>
+    <p class="gold"><strong>Unique! Togetherness We Rise!</strong></p>
+    <h2>Member Access</h2>
+    <p>Use the email address on your approved membership application.</p>
+
+    <form id="loginForm">
+      <label for="loginEmail">Email address</label>
+      <input id="loginEmail" type="email" autocomplete="email" required>
+
+      <label for="loginPassword">Password</label>
+      <input id="loginPassword" type="password"
+        autocomplete="current-password" required>
+
+      <button type="submit">Member Login</button>
+    </form>
+
+    <hr style="margin-top:24px;">
+
+    <h2>Create Member Account</h2>
+    <p>For approved members who have not created a login account yet.</p>
+
+    <form id="signupForm">
+      <label for="signupEmail">Registered email address</label>
+      <input id="signupEmail" type="email" autocomplete="email" required>
+
+      <label for="signupPassword">Create password</label>
+      <input id="signupPassword" type="password"
+        autocomplete="new-password" minlength="8" required>
+      <small>Use at least 8 characters.</small>
+
+      <button class="secondary" type="submit">Create Account</button>
+    </form>
+
+    <p id="message" role="status" aria-live="polite"></p>
+    <p class="back"><a href="index.html">Back to homepage</a></p>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const client = window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_PUBLISHABLE_KEY
+    );
+
+    const message = document.getElementById("message");
+    const loginForm = document.getElementById("loginForm");
+    const signupForm = document.getElementById("signupForm");
+
+    function showMessage(text) {
+      message.textContent = text;
+    }
+
+    async function linkApprovedApplication() {
+      const { data, error } = await client.rpc("claim_member_account");
+
+      if (error) throw error;
+      if (data !== true) {
+        throw new Error("Your member account could not be linked.");
+      }
+    }
+
+    loginForm.addEventListener("submit", async function(event) {
+      event.preventDefault();
+      showMessage("Signing in...");
+
+      const email = document.getElementById("loginEmail").value.trim();
+      const password = document.getElementById("loginPassword").value;
+
+      const { error } = await client.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) {
+        showMessage("Login failed: " + error.message);
+        return;
+      }
+
+      try {
+        await linkApprovedApplication();
+        showMessage(
+          "Login successful. Your approved membership is linked. " +
+          "We will open your member area after its access settings are ready."
+        );
+      } catch (error) {
+        showMessage(
+          "Your login succeeded, but membership access could not be confirmed. " +
+          "Please check that your application is approved and uses this email. " +
+          "Details: " + error.message
+        );
+      }
+    });
+
+    signupForm.addEventListener("submit", async function(event) {
+      event.preventDefault();
+      showMessage("Creating your account...");
+
+      const email = document.getElementById("signupEmail").value.trim();
+      const password = document.getElementById("signupPassword").value;
+
+      const { data, error } = await client.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: window.location.href.split("?")[0]
+        }
+      });
+
+      if (error) {
+        showMessage("Account creation failed: " + error.message);
+        return;
+      }
+
+      if (!data.session) {
+        showMessage(
+          "Account request submitted. Check your email for a confirmation link. " +
+          "After confirming, return here and log in. Your application must be approved."
+        );
+        return;
+      }
+
+      try {
+        await linkApprovedApplication();
+        showMessage(
+          "Account created and approved membership linked successfully. " +
+          "Your member area will be available after its access settings are ready."
+        );
+      } catch (error) {
+        showMessage(
+          "Your account was created, but membership could not be confirmed. " +
+          "Your application must be approved and use the same email. " +
+          "Details: " + error.message
+        );
+      }
+    });
+  </script>
+</body>
+</html>
