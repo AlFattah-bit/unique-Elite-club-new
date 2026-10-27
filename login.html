@@ -1,1 +1,133 @@
 
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#123c2b">
+  <title>Member Login | Unique Elite Club</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px 14px;
+      font-family: Arial, sans-serif;
+      background: #f5f1e7;
+      color: #183b2b;
+    }
+    main {
+      max-width: 450px;
+      margin: 35px auto;
+      padding: 26px;
+      background: white;
+      border-top: 6px solid #c7a54b;
+      border-radius: 16px;
+      box-shadow: 0 8px 28px #173c2b18;
+    }
+    .gold { color: #a27b21; font-weight: bold; }
+    label {
+      display: block;
+      margin-top: 18px;
+      font-weight: bold;
+    }
+    input {
+      width: 100%;
+      padding: 13px;
+      margin-top: 7px;
+      border: 1px solid #c8d2ca;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    button {
+      width: 100%;
+      padding: 14px;
+      margin-top: 22px;
+      border: 0;
+      border-radius: 8px;
+      background: #174b35;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+    }
+    button:disabled { opacity: .6; }
+    #message { line-height: 1.5; }
+    a { color: #174b35; }
+  </style>
+</head>
+<body>
+<main>
+  <p class="gold">UNIQUE ELITE CLUB</p>
+  <h1>Member Login</h1>
+  <p>Sign in using your registered email and password.</p>
+
+  <form id="loginForm">
+    <label for="email">Email address</label>
+    <input id="email" type="email" required
+           autocomplete="username">
+
+    <label for="password">Password</label>
+    <input id="password" type="password" required
+           autocomplete="current-password">
+
+    <button id="loginButton" type="submit">Sign In</button>
+  </form>
+
+  <p id="message" role="status" aria-live="polite"></p>
+  <p><a href="./register.html">Apply for membership</a></p>
+  <p><a href="./index.html">Return to homepage</a></p>
+</main>
+
+<script src="./config.js"></script>
+<script>
+const form = document.getElementById("loginForm");
+const button = document.getElementById("loginButton");
+const message = document.getElementById("message");
+
+form.addEventListener("submit", async function(event) {
+  event.preventDefault();
+
+  if (typeof SUPABASE_URL === "undefined" ||
+      typeof SUPABASE_PUBLISHABLE_KEY === "undefined" ||
+      SUPABASE_PUBLISHABLE_KEY.includes("PASTE_YOUR")) {
+    message.textContent = "The website configuration is incomplete.";
+    return;
+  }
+
+  button.disabled = true;
+  message.textContent = "Signing in...";
+
+  try {
+    const response = await fetch(
+      SUPABASE_URL + "/auth/v1/token?grant_type=password",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": SUPABASE_PUBLISHABLE_KEY
+        },
+        body: JSON.stringify({
+          email: document.getElementById("email").value.trim(),
+          password: document.getElementById("password").value
+        })
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error("Sign-in failed. Check your details or account setup.");
+    }
+
+    message.textContent =
+      "Sign-in successful. Member approval and access permissions must still be verified before accessing club records.";
+  } catch (error) {
+    message.textContent = error.message ||
+      "Unable to sign in. Please try again later.";
+  } finally {
+    button.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
