@@ -98,19 +98,13 @@
           SUPABASE_URL,
           SUPABASE_PUBLISHABLE_KEY
         );
+const { data: memberAccess, error: accessError } =
+  await client.rpc("claim_member_account");
 
-        const { data: sessionData, error: sessionError } =
-          await client.auth.getSession();
+if (accessError) throw accessError;
 
-        if (sessionError) throw sessionError;
-
-        if (!sessionData.session) {
-          throw new Error("Please sign in through the administrator login const { data: isAdmin, error: adminError } =
-       await client.rpc("is_club_admin");
-        if (adminError) throw adminError;
-       if (isAdmin !== true) {
-          await client.auth.signOut();
-         throw new Error("Administrator access is required.");
+if (memberAccess !== true) {
+  throw new Error("Your approved membership could not be verified.");
 }
 
         document.getElementById("loadingPanel").classList.add("hidden");
