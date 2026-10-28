@@ -1,5 +1,4 @@
 
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -105,9 +104,9 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     // Replace these two placeholders with your own project values.
-    const SUPABASE_URL = "PASTE_YOUR_SUPABASE_PROJECT_URL";
+    const SUPABASE_URL = "'https://evvswpswvpnduztrtzsj.supabase.co'";
     const SUPABASE_PUBLISHABLE_KEY =
-      "PASTE_YOUR_SUPABASE_PUBLISHABLE_KEY";
+      ".    ";
 
     const client = window.supabase.createClient(
       SUPABASE_URL,
@@ -347,8 +346,8 @@
 
     async function start() {
       if (
-        SUPABASE_URL.includes("https://evvswpswvpnduztrtzsj.supabase.co") ||
-        SUPABASE_PUBLISHABLE_KEY.includes("sb_publishable_-Msvw5-qQuC7lq5eLLyEIA_0HMbSQZh")
+        SUPABASE_URL.includes("PASTE_YOUR") ||
+        SUPABASE_PUBLISHABLE_KEY.includes("PASTE_YOUR")
       ) {
         showLogin();
         message(
