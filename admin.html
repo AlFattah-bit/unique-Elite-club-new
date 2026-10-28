@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,55 +9,37 @@
   <style>
     * { box-sizing: border-box; }
     body {
-      margin: 0;
-      padding: 20px;
+      margin: 0; padding: 20px;
       font-family: Arial, sans-serif;
-      background: #f3f6f4;
-      color: #183426;
+      background: #f3f6f4; color: #183426;
     }
-    header, main {
-      max-width: 900px;
-      margin: 0 auto 20px;
-    }
+    header, main { max-width: 900px; margin: 0 auto 20px; }
     header {
-      background: #123c2b;
-      color: white;
-      padding: 24px;
-      border-radius: 14px;
+      background: #123c2b; color: white;
+      padding: 24px; border-radius: 14px;
     }
     h1 { margin: 0 0 8px; font-size: 24px; }
     h2 { font-size: 20px; }
     .panel {
-      background: white;
-      padding: 20px;
-      border-radius: 12px;
-      margin-bottom: 18px;
+      background: white; padding: 20px;
+      border-radius: 12px; margin-bottom: 18px;
       box-shadow: 0 2px 8px #0000000b;
     }
     input, button {
-      width: 100%;
-      padding: 12px;
-      margin: 7px 0;
-      border-radius: 8px;
-      font-size: 16px;
+      width: 100%; padding: 12px; margin: 7px 0;
+      border-radius: 8px; font-size: 16px;
     }
     input { border: 1px solid #bdc9c0; }
     button {
-      border: 0;
-      background: #176641;
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
+      border: 0; background: #176641; color: white;
+      font-weight: bold; cursor: pointer;
     }
-    button:disabled { opacity: .5; }
+    button:disabled { opacity: .5; cursor: wait; }
     .reject { background: #a52b2b; }
     .secondary { background: #52675b; }
     .application {
-      border: 1px solid #dce5de;
-      border-radius: 10px;
-      padding: 15px;
-      margin: 12px 0;
-      overflow-wrap: anywhere;
+      border: 1px solid #dce5de; border-radius: 10px;
+      padding: 15px; margin: 12px 0; overflow-wrap: anywhere;
     }
     .muted { color: #637268; font-size: 14px; }
     #message { white-space: pre-wrap; overflow-wrap: anywhere; }
@@ -76,7 +59,9 @@
       <form id="loginForm">
         <input id="email" type="email"
           placeholder="Admin email address" required>
-        <button type="submit">Send Login Link</button>
+        <button id="loginButton" type="submit">
+          Send Login Link
+        </button>
       </form>
       <p class="muted">
         A secure sign-in link will be sent to your email.
@@ -96,15 +81,20 @@
     </section>
 
     <section class="panel">
-      <p id="message" role="status">Loading admin page…</p>
+      <p id="message" role="status" aria-live="polite">
+        Loading admin page…
+      </p>
     </section>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    // Replace these two placeholders with your own project values.
-    const SUPABASE_URL =const SUPABASE_URL = "https://evvswpswvpnduztrtzsj.supabase.co";
-    const SUPABASE_PUBLISHABLE_KEY ="sb_publishable_4SYXy63g8QKKLB3ImtpUnw_dJEsyI3I".
+    // Correct Supabase project configuration
+    const SUPABASE_URL =
+      "https://evvswpswvpnduztrtzsj.supabase.co";
+
+    const SUPABASE_PUBLISHABLE_KEY =
+      "sb_publishable_-Msvw5-qQuC7lq5eLLyEIA_0HMbSQZh";
 
     const client = window.supabase.createClient(
       SUPABASE_URL,
@@ -152,6 +142,7 @@
       if (sessionError) throw sessionError;
 
       const session = sessionData.session;
+
       if (!session) {
         showLogin();
         message("Please sign in with your administrator email.");
@@ -166,9 +157,7 @@
       if (allowed !== true) {
         await client.auth.signOut();
         showLogin();
-        message(
-          "This account is not recognized as a club administrator."
-        );
+        message("This account is not recognized as a club administrator.");
         return false;
       }
 
@@ -178,22 +167,31 @@
 
     $("loginForm").addEventListener("submit", async event => {
       event.preventDefault();
-      const email = $("email").value.trim();
 
+      const email = $("email").value.trim();
+      const button = $("loginButton");
+
+      button.disabled = true;
       message("Sending secure login link…");
 
-      const { error } = await client.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: window.location.href,
-          shouldCreateUser: false
-        }
-      });
+      try {
+        const { error } = await client.auth.signInWithOtp({
+          email,
+          options: {
+            emailRedirectTo: window.location.href,
+            shouldCreateUser: false
+          }
+        });
 
-      if (error) {
+        if (error) throw error;
+
+        message(
+          "Request accepted. Check your inbox and Spam folder for the login link."
+        );
+      } catch (error) {
         message("Login link could not be sent: " + error.message);
-      } else {
-        message("Check your email for the secure login link.");
+      } finally {
+        button.disabled = false;
       }
     });
 
@@ -254,10 +252,7 @@
         );
         reject.addEventListener("click", async () => {
           if (!confirm("Reject this membership application?")) return;
-
-          await updateApplication(app.id, {
-            status: "rejected"
-          });
+          await updateApplication(app.id, { status: "rejected" });
         });
 
         card.append(approve, reject);
@@ -268,6 +263,7 @@
 
     async function loadApplications() {
       if (busy) return;
+
       busy = true;
       $("refreshButton").disabled = true;
       $("applications").replaceChildren();
@@ -317,7 +313,7 @@
 
         if (!data || data.length === 0) {
           throw new Error(
-            "No application was updated. Check your admin permissions."
+            "No application was updated. Check admin permissions."
           );
         }
 
@@ -331,31 +327,32 @@
     $("refreshButton").addEventListener("click", loadApplications);
 
     $("logoutButton").addEventListener("click", async () => {
-      await client.auth.signOut();
+      const { error } = await client.auth.signOut();
+
+      if (error) {
+        message("Sign-out failed: " + error.message);
+        return;
+      }
+
       showLogin();
       message("You have signed out.");
     });
 
-    client.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_OUT") {
-        showLogin();
-      }
+    client.auth.onAuthStateChange(event => {
+      if (event === "SIGNED_OUT") showLogin();
     });
 
     async function start() {
-      if (
-        SUPABASE_URL.includes("PASTE_YOUR") ||
-        SUPABASE_PUBLISHABLE_KEY.includes("PASTE_YOUR")
-      ) {
-        showLogin();
-        message(
-          "Setup required: add your Supabase project URL and " +
-          "publishable key in admin.html."
-        );
-        return;
-      }
-
       try {
+        if (
+          SUPABASE_URL.includes("PASTE_YOUR") ||
+          SUPABASE_PUBLISHABLE_KEY.includes("PASTE_YOUR")
+        ) {
+          showLogin();
+          message("Setup required: check the Supabase URL and publishable key.");
+          return;
+        }
+
         if (await checkAdmin()) await loadApplications();
       } catch (error) {
         showLogin();
