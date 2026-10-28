@@ -1,6 +1,4 @@
 
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -27,7 +25,11 @@
     }
     h1 { text-align: center; color: #174b34; }
     .gold { color: #b68a28; text-align: center; }
-    label { display: block; margin-top: 16px; font-weight: bold; }
+    label {
+      display: block;
+      margin-top: 16px;
+      font-weight: bold;
+    }
     input {
       width: 100%;
       padding: 13px;
@@ -48,7 +50,11 @@
       font-weight: bold;
     }
     button.secondary { background: #b68a28; color: #172d20; }
-    #message { margin-top: 18px; line-height: 1.5; overflow-wrap: anywhere; }
+    #message {
+      margin-top: 18px;
+      line-height: 1.5;
+      overflow-wrap: anywhere;
+    }
     a { color: #174b34; }
     .back { text-align: center; margin-top: 22px; }
   </style>
@@ -57,12 +63,14 @@
   <main class="card">
     <h1>Unique Elite Club</h1>
     <p class="gold"><strong>Unique! Togetherness We Rise!</strong></p>
-    <h2>Member Access</h2>
-    <p>Use the email address on your approved membership application.</p>
+
+    <h2>Member Login</h2>
+    <p>Log in using the email address and password for your account.</p>
 
     <form id="loginForm">
       <label for="loginEmail">Email address</label>
-      <input id="loginEmail" type="email" autocomplete="email" required>
+      <input id="loginEmail" type="email"
+        autocomplete="email" required>
 
       <label for="loginPassword">Password</label>
       <input id="loginPassword" type="password"
@@ -73,19 +81,30 @@
 
     <hr style="margin-top:24px;">
 
-    <h2>Create Member Account</h2>
-    <p>For approved members who have not created a login account yet.</p>
+    <h2>New Member Registration</h2>
+    <p>Register your details below. Your membership will remain pending until an administrator approves it.</p>
 
     <form id="signupForm">
-      <label for="signupEmail">Registered email address</label>
-      <input id="signupEmail" type="email" autocomplete="email" required>
+      <label for="fullName">Full name</label>
+      <input id="fullName" type="text"
+        autocomplete="name" maxlength="150" required>
+
+      <label for="phone">Phone number</label>
+      <input id="phone" type="tel"
+        autocomplete="tel" maxlength="30" required>
+
+      <label for="signupEmail">Email address</label>
+      <input id="signupEmail" type="email"
+        autocomplete="email" required>
 
       <label for="signupPassword">Create password</label>
       <input id="signupPassword" type="password"
         autocomplete="new-password" minlength="8" required>
       <small>Use at least 8 characters.</small>
 
-      <button class="secondary" type="submit">Create Account</button>
+      <button class="secondary" type="submit">
+        Register for Membership
+      </button>
     </form>
 
     <p id="message" role="status" aria-live="polite"></p>
@@ -113,7 +132,7 @@
 
       if (error) throw error;
       if (data !== true) {
-        throw new Error("Your member account could not be linked.");
+        throw new Error("Membership is not approved or could not be linked.");
       }
     }
 
@@ -138,56 +157,57 @@
         await linkApprovedApplication();
         showMessage(
           "Login successful. Your approved membership is linked. " +
-          "We will open your member area after its access settings are ready."
+          "Your member area will be available when its access settings are ready."
         );
       } catch (error) {
         showMessage(
-          "Your login succeeded, but membership access could not be confirmed. " +
-          "Please check that your application is approved and uses this email. " +
-          "Details: " + error.message
+          "You are signed in, but membership access is not confirmed. " +
+          "If you registered recently, please wait for administrator approval. " +
+          "If you have already been approved, contact the club administrator."
         );
       }
     });
 
     signupForm.addEventListener("submit", async function(event) {
       event.preventDefault();
-      showMessage("Creating your account...");
+      showMessage("Submitting your registration...");
 
+      const fullName = document.getElementById("fullName").value.trim();
+      const phone = document.getElementById("phone").value.trim();
       const email = document.getElementById("signupEmail").value.trim();
       const password = document.getElementById("signupPassword").value;
+
+      if (!fullName || !phone || !email || !password) {
+        showMessage("Please complete all registration fields.");
+        return;
+      }
 
       const { data, error } = await client.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: window.location.href.split("?")[0]
+          emailRedirectTo: window.location.href.split("?")[0],
+          data: {
+            full_name: fullName,
+            phone: phone
+          }
         }
       });
 
       if (error) {
-        showMessage("Account creation failed: " + error.message);
+        showMessage("Registration failed: " + error.message);
         return;
       }
 
-      if (!data.session) {
+      if (data.session) {
         showMessage(
-          "Account request submitted. Check your email for a confirmation link. " +
-          "After confirming, return here and log in. Your application must be approved."
+          "Registration submitted successfully. Your membership is pending " +
+          "administrator approval. Please wait for the club administrator."
         );
-        return;
-      }
-
-      try {
-        await linkApprovedApplication();
+      } else {
         showMessage(
-          "Account created and approved membership linked successfully. " +
-          "Your member area will be available after its access settings are ready."
-        );
-      } catch (error) {
-        showMessage(
-          "Your account was created, but membership could not be confirmed. " +
-          "Your application must be approved and use the same email. " +
-          "Details: " + error.message
+          "Registration submitted. Please check your email for a confirmation " +
+          "link if required. Your membership is pending administrator approval."
         );
       }
     });
